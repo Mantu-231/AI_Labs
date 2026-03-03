@@ -1,65 +1,87 @@
 from collections import deque
 
-# Goal State
-goal_state = [[1, 2, 3],
-              [4, 5, 6],
-              [7, 8, 0]]
+# Goal state
+GOAL_STATE = (1, 2, 3,
+              4, 5, 6,
+              7, 8, 0)
 
-# Function to find position of blank (0)
-def find_blank(state):
-    for i in range(3):
-        for j in range(3):
-            if state[i][j] == 0:
-                return i, j
+# Possible moves (index shifts)
+MOVES = {
+    "UP": -3,
+    "DOWN": 3,
+    "LEFT": -1,
+    "RIGHT": 1
+}
 
-# Function to generate new states
-def generate_states(state):
-    x, y = find_blank(state)
-    moves = [(0,1), (0,-1), (1,0), (-1,0)]
-    children = []
+def is_valid_move(index, move):
+    row, col = divmod(index, 3)
 
-    for dx, dy in moves:
-        nx, ny = x + dx, y + dy
-        if 0 <= nx < 3 and 0 <= ny < 3:
-            new_state = [row[:] for row in state]
-            new_state[x][y], new_state[nx][ny] = new_state[nx][ny], new_state[x][y]
-            children.append(new_state)
+    if move == "UP" and row == 0:
+        return False
+    if move == "DOWN" and row == 2:
+        return False
+    if move == "LEFT" and col == 0:
+        return False
+    if move == "RIGHT" and col == 2:
+        return False
 
-    return children
+    return True
 
-# BFS Algorithm
+
+def get_neighbors(state):
+    neighbors = []
+    zero_index = state.index(0)
+
+    for move, shift in MOVES.items():
+        if is_valid_move(zero_index, move):
+            new_index = zero_index + shift
+            new_state = list(state)
+            # Swap tiles
+            new_state[zero_index], new_state[new_index] = (
+                new_state[new_index],
+                new_state[zero_index],
+            )
+            neighbors.append(tuple(new_state))
+
+    return neighbors
+
+
 def bfs(start_state):
-    visited = set()
     queue = deque([(start_state, [])])
+    visited = set()
 
     while queue:
-        current, path = queue.popleft()
+        current_state, path = queue.popleft()
 
-        if current == goal_state:
-            return path + [current]
+        if current_state == GOAL_STATE:
+            return path + [current_state]
 
-        visited.add(str(current))
+        visited.add(current_state)
 
-        for child in generate_states(current):
-            if str(child) not in visited:
-                queue.append((child, path + [current]))
+        for neighbor in get_neighbors(current_state):
+            if neighbor not in visited:
+                queue.append((neighbor, path + [current_state]))
 
     return None
 
-# Initial State
-initial_state = [[1, 2, 3],
-                 [4, 0, 6],
-                 [7, 5, 8]]
 
-# Solve the puzzle
-solution = bfs(initial_state)
+def print_board(state):
+    for i in range(0, 9, 3):
+        print(state[i:i+3])
+    print()
 
-# Print Solution
-if solution:
-    print("Solution Path:\n")
-    for step in solution:
-        for row in step:
-            print(row)
-        print()
-else:
-    print("No solution found.")
+
+if __name__ == "__main__":
+    # Example starting state
+    start = (1, 2, 3,
+             4, 0, 6,
+             7, 5, 8)
+
+    solution = bfs(start)
+
+    if solution:
+        print(f"Solution found in {len(solution)-1} moves!\n")
+        for step in solution:
+            print_board(step)
+    else:
+        print("No solution found.")
